@@ -8,6 +8,7 @@ from django.contrib.auth.hashers import make_password
 
 from concert.forms import LoginForm, SignUpForm
 from concert.models import Concert, ConcertAttending
+import os
 import requests as req
 
 
@@ -41,20 +42,34 @@ def index(request):
 
 
 def songs(request):
-    songs = {"songs":[{"id":1,"title":"duis faucibus accumsan odio curabitur convallis","lyrics":"Morbi non lectus. Aliquam sit amet diam in magna bibendum imperdiet. Nullam orci pede, venenatis non, sodales sed, tincidunt eu, felis."}]}
-    return render(request, "songs.html", {"songs":songs["songs"]})
+    try:
+        res = req.get(f"{os.getenv('SONGS_URL')}/song", timeout=5)
+        if res.status_code == 200:
+            songs = res.json().get("songs", [])
+        else:
+            songs = []
+    except Exception as e:
+        print(f"Error fetching songs: {e}")
+        songs = []
+    return render(request, "songs.html", {"songs": songs})
+
 
 
 def photos(request):
-    photos = [{
-        "id": 1,
-        "pic_url": "http://dummyimage.com/136x100.png/5fa2dd/ffffff",
-        "event_country": "United States",
-        "event_state": "District of Columbia",
-        "event_city": "Washington",
-        "event_date": "11/16/2022"
-        }]
+    try:
+        res = req.get(f"{os.getenv('PICTURES_URL')}/picture", timeout=10)
+        if res.status_code == 200:
+            photos = res.json()
+            print("Fotos recibidas:", len(photos))
+        else:
+            print("Error en la respuesta:", res.status_code)
+            photos = []
+    except Exception as e:
+        print(f"Error fetching photos: {e}")
+        photos = []
     return render(request, "photos.html", {"photos": photos})
+
+    
 
 def login_view(request):
     if request.method == "POST":
